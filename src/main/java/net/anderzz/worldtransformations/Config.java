@@ -1,4 +1,4 @@
-package net.anderzz.worldtransform;
+package net.anderzz.worldtransformations;
 
 import java.util.List;
 

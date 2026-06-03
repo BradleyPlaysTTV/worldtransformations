@@ -1,6 +1,6 @@
-package net.anderzz.worldtransform;
+package net.anderzz.worldtransformations;
 
-import net.anderzz.worldtransform.recipe.ModRecipes;
+import net.anderzz.worldtransformations.recipe.ModRecipes;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -15,16 +15,16 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
-@Mod(WorldTransform.MOD_ID)
-public class WorldTransform {
+@Mod(WorldTransformations.MOD_ID)
+public class WorldTransformations {
     // Define mod id in a common place for everything to reference
-    public static final String MOD_ID = "worldtransform";
+    public static final String MOD_ID = "worldtransformations";
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
-    public WorldTransform(IEventBus modEventBus, ModContainer modContainer) {
+    public WorldTransformations(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
