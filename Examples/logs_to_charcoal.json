@@ -1,0 +1,12 @@
+{
+  "type": "worldtransformations:world_transform",
+  "item": {
+    "tag": "minecraft:logs"
+  },
+  "transformTime": 30,
+  "block": "minecraft:magma_block",
+  "result": {
+    "count": 1,
+    "id": "minecraft:charcoal"
+  }
+}

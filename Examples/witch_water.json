@@ -1,0 +1,8 @@
+{
+  "type": "worldtransformations:world_transform",
+  "item": {
+    "item": "exdeorum:mycelium_spores"
+  },
+  "transformTime": 0,
+  "replaceFluid": "exdeorum:witch_water"
+}

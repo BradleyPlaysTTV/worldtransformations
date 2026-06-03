@@ -1,0 +1,11 @@
+{
+  "type": "worldtransformations:world_transform",
+  "item": {
+    "item": "minecraft:cobblestone"
+  },
+  "transformTime": 30,
+  "result": {
+    "count": 1,
+    "id": "minecraft:gravel"
+  }
+}
