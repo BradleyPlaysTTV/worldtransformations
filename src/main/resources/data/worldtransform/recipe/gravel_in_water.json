@@ -1,0 +1,19 @@
+{
+  "type": "worldtransform:world_transform",
+  "item": {
+    "item": "minecraft:gravel"
+  },
+  "transformTime": 5,
+  "block": "minecraft:magma_block",
+  "fluid": "minecraft:water",
+  "results": [
+    { "id": "minecraft:diamond", "chance": 5 },
+    { "id": "minecraft:raw_iron", "chance": 60 },
+    { "id": "minecraft:lapis_lazuli", "chance": 70 },
+    { "id": "minecraft:redstone", "chance": 20 },
+    { "id": "minecraft:raw_gold", "chance": 20 },
+    { "id": "minecraft:raw_copper", "chance": 20 },
+    { "id": "minecraft:ancient_debris", "chance": 20 }
+  ],
+  "replaceFluid": "minecraft:air"
+}
