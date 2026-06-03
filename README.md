@@ -17,7 +17,7 @@ This recipe is a random output based on percentage, for example.
 **You have 5% chance of getting Diamonds when throwing Gravel into Water**
 ```
 {
-  "type": "worldtransform:world_transform",
+  "type": "worldtransformations:world_transform",
   "item": {
     "item": "minecraft:gravel"
   },
@@ -41,7 +41,7 @@ This recipe is a random output based on percentage, for example.
 This recipe requires you to throw any log on top of a Magma Block and it transforms into Charcoal after 30 seconds.
 ```
 {
-  "type": "worldtransform:world_transform",
+  "type": "worldtransformations:world_transform",
   "item": {
     "tag": "minecraft:logs"
   },
@@ -57,7 +57,7 @@ This recipe requires you to throw any log on top of a Magma Block and it transfo
 <ins>This is every option you can have</ins>
 ```
 {
-  "type": "worldtransform:world_transform",
+  "type": "worldtransformations:world_transform",
   "item": {
     "tag": "minecraft:logs" // The item you throw. either "tag" or "item"
   },
