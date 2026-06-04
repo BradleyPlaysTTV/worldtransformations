@@ -3,6 +3,7 @@
   "item": {
     "item": "exdeorum:mycelium_spores"
   },
+  "fluid": "minecraft:water",
   "transformTime": 0,
   "replaceFluid": "exdeorum:witch_water"
 }
