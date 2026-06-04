@@ -28,7 +28,7 @@ import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
 
 import java.util.List;
 
-@EventBusSubscriber(modid = "worldtransformations")
+@EventBusSubscriber(modid = WorldTransformations.MOD_ID)
 public class WorldTransformationHandler {
 
     private static final String TIME_TAG = "transformTime";

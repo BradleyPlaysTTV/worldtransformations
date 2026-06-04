@@ -14,7 +14,9 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
+// 2. Dynamic Version Assignment Block
+// Combines your base properties string (1.0.) with your total repository commits (e.g., 42)
+version = "${project.mod_version_base}${getGitCommitCount()}"
 group = mod_group_id
 
 sourceSets.main.resources {
@@ -128,6 +130,19 @@ dependencies {
     runtimeOnly "mezz.jei:jei-1.21.1-neoforge:19.20.0.240"
 }
 
+def getGitCommitCount() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', '--count', 'HEAD'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (Exception ignored) {
+        return "0" // Fallback build build identifier if Git isn't initialized yet
+    }
+}
+
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -139,7 +154,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
-            mod_version            : mod_version,
+            mod_version            : version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

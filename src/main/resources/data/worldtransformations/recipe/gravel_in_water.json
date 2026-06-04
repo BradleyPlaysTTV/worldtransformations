@@ -10,7 +10,7 @@
     { "id": "minecraft:raw_iron", "chance": 60 },
     { "id": "minecraft:lapis_lazuli", "chance": 50 },
     { "id": "minecraft:redstone", "chance": 20 },
-    { "id": "minecraft:raw_gold", "chance": 30 },
+    { "id": "minecraft:raw_gold", "chance": 30.7 },
     { "id": "minecraft:raw_copper", "chance": 50 },
     { "id": "minecraft:ancient_debris", "chance": 2 }
   ]

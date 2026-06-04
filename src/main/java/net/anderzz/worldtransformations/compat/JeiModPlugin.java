@@ -5,6 +5,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import net.anderzz.worldtransformations.WorldTransformations;
 import net.anderzz.worldtransformations.recipe.ModRecipes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -19,11 +20,11 @@ public class JeiModPlugin implements IModPlugin {
 
     // Define a unique JEI reference registration identifier for your transformation type
     public static final RecipeType<WorldTransformationRecipe> TRANSFORM_JEI_TYPE =
-            RecipeType.create("worldtransform", "world_transform", WorldTransformationRecipe.class);
+            RecipeType.create(WorldTransformations.MOD_ID, "world_transform", WorldTransformationRecipe.class);
 
     @Override
     public ResourceLocation getPluginUid() {
-        return ResourceLocation.fromNamespaceAndPath("worldtransform", "jei_plugin");
+        return ResourceLocation.fromNamespaceAndPath(WorldTransformations.MOD_ID, "jei_plugin");
     }
 
     @Override
