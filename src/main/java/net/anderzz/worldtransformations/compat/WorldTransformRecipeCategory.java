@@ -3,41 +3,60 @@ package net.anderzz.worldtransformations.compat;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.anderzz.worldtransformations.WorldTransformations;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.anderzz.worldtransformations.recipe.WeightedOutput;
 import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransformationRecipe> {
 
     private final IDrawable background;
     private final IDrawable icon;
-    IGuiHelper helper;
+    IGuiHelper guiHelper;
     private final Component localizedName;
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("worldtransform", "textures/gui/slot.png");
-
-    public WorldTransformRecipeCategory(IGuiHelper helper) {
-        this.helper = helper;
+    public WorldTransformRecipeCategory(IGuiHelper guiHelper) {
+        this.guiHelper = guiHelper;
         // Build an empty grey container background frame (Width: 160, Height: 60)
-        this.background = helper.createBlankDrawable(160, 60);
-        // Use a Cobblestone block icon to represent this custom category tab inside the JEI index panel
-        this.icon = helper.createDrawableIngredient(VanillaTypes.ITEM_STACK, new ItemStack(Items.GRASS_BLOCK));
+        this.background = guiHelper.createBlankDrawable(160, 60);
         this.localizedName = Component.literal("In-World Transformation");
+
+        // 1. Resolve your 32x32 texture path
+        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(WorldTransformations.MOD_ID, "textures/gui/jei_icon.png");
+
+        // 2. Create a standard 5-argument drawable matching the full 32x32 texture size
+        IDrawable rawDrawable = guiHelper.createDrawable(texture, 0, 0, 32, 32);
+
+        // 3. Wrap it in a custom anonymous IDrawable to force the 16x16 scaling matrix at render time
+        this.icon = new IDrawable() {
+            @Override
+            public int getWidth() {
+                return 16; // Tell JEI the layout bounding box is 16 pixels wide
+            }
+
+            @Override
+            public int getHeight() {
+                return 16; // Tell JEI the layout bounding box is 16 pixels high
+            }
+
+            @Override
+            public void draw(GuiGraphics guiGraphics, int xOffset, int yOffset) {
+                guiGraphics.blit(texture, xOffset, yOffset, 16, 16, 0.0f, 0.0f, 32, 32, 32, 32);
+            }
+        };
     }
 
     @Override
@@ -121,7 +140,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                     int posY = (18 * y) + startY;
 
                     var slotBuilder = builder.addSlot(RecipeIngredientRole.OUTPUT, posX, posY)
-                            .setBackground(this.helper.getSlotDrawable(), -1, -1);
+                            .setBackground(this.guiHelper.getSlotDrawable(), -1, -1);
 
                     if (listIndex < outputs.size()) {
                         WeightedOutput outputConfig = outputs.get(listIndex);
@@ -129,7 +148,9 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
                         slotBuilder.addIngredient(VanillaTypes.ITEM_STACK, outputConfig.itemStack())
                                 .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
-                                    String formatString = String.format("Drop Chance: %.1f%%", itemChance);
+                                    DecimalFormat df = new DecimalFormat("#.#");
+                                    String formattedChance = df.format(itemChance);
+                                    String formatString = String.format("Drop Chance: %s%%", formattedChance);
                                     tooltip.add(Component.literal("§6" + formatString));
                                 }));
 
