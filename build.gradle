@@ -24,8 +24,6 @@ sourceSets.main.resources {
     // Exclude common development only resources from finalized outputs
     exclude("**/*.bbmodel") // BlockBench project files
     exclude("src/generated/**/.cache") // datagen cache files
-
-    exclude("data/**")
 }
 
 repositories {
@@ -178,4 +176,10 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+// This block ensures the filter ONLY runs during the final packaging build task
+tasks.named('jar', Jar) {
+    // Drop the entire data folder ONLY when generating the release jar file
+    exclude("data/**")
 }

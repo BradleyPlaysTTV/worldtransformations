@@ -52,13 +52,13 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
     @Override
     public int getWidth() {
-        return 160;
+        return 166;
     }
 
     // 2. Specify the structural height of your JEI category layout frame
     @Override
     public int getHeight() {
-        return 150;
+        return 126;
     }
 
     @Override
@@ -75,19 +75,9 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         // Slot 2: Fluid Condition (Middle Top - Rendered via Bucket)
         if (recipe.fluid().isPresent()) {
             builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
-                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.fluid().get().getBucket()))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                        tooltip.add(Component.literal("§eItem must be placed in liquid"));
-                    });
+                    .addFluidStack(recipe.fluid().get(), 1000)
+                    .setFluidRenderer(1000, false, 16, 16);
 
-        }
-
-        if (recipe.isFire()) {
-            builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
-                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(Items.CAMPFIRE))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                        tooltip.add(Component.literal("§eItem must be thrown into fire"));
-                    });
         }
 
         // Slot 3: Below Block Condition (Middle Bottom)
@@ -99,10 +89,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             }
 
             builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + startX, 50)
-                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                        tooltip.add(Component.literal("§eItem must be placed with this block below"));
-                    });
+                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()));
         }
 
         // Output Processing System (Right Side)
@@ -124,27 +111,31 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         // Scenario B: Handle Flat 'results' list arrays (Dynamic Chance)
         if (recipe.results().isPresent()) {
             List<WeightedOutput> outputs = recipe.results().get();
-            int startX = 10;
+            int listIndex =0;
+            int startX = 2;
             int startY = 70;
 
-            for (int i = 0; i < outputs.size(); i++) {
-                WeightedOutput outputConfig = outputs.get(i);
-                double itemChance = outputConfig.chance();
+            for (int y = 0; y < 3; y++) {
+                for (int x = 0; x < 9; x++) {
+                    int posX = (18 * x) + startX;
+                    int posY = (18 * y) + startY;
 
-                // Arrange them in rows of 10 items max across the bottom
-                int col = i % 10;
-                int row = i / 10;
+                    var slotBuilder = builder.addSlot(RecipeIngredientRole.OUTPUT, posX, posY)
+                            .setBackground(this.helper.getSlotDrawable(), -1, -1);
 
-                int slotX = startX + (col * 20);
-                int slotY = startY + (row * 18);
+                    if (listIndex < outputs.size()) {
+                        WeightedOutput outputConfig = outputs.get(listIndex);
+                        double itemChance = outputConfig.chance();
 
-                builder.addSlot(RecipeIngredientRole.OUTPUT, slotX, slotY)
-                        .addIngredient(VanillaTypes.ITEM_STACK, outputConfig.itemStack())
-                        .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                            String formatString = String.format("Drop Chance: %.1f%%", itemChance);
-                            tooltip.add(Component.literal("§6" + formatString));
-                        })
-                        .setBackground(this.helper.getSlotDrawable(), -1, -1);
+                        slotBuilder.addIngredient(VanillaTypes.ITEM_STACK, outputConfig.itemStack())
+                                .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
+                                    String formatString = String.format("Drop Chance: %.1f%%", itemChance);
+                                    tooltip.add(Component.literal("§6" + formatString));
+                                }));
+
+                        listIndex++;
+                    }
+                }
             }
         }
     }
@@ -159,7 +150,38 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         String timeString = seconds + "s";
 
         // 3. Render the progress strings
-        guiGraphics.drawString(minecraft.font, timeString, 82, 35, 0x404040, false);
-        guiGraphics.drawString(minecraft.font, "↓", 75, 35, 0x8B8B8B, false);
+        guiGraphics.drawString(minecraft.font, timeString, 82, 35, 0x707070, false);
+        guiGraphics.drawString(minecraft.font, "↓", 75, 35, 0x707070, false);
+
+        // 3. Render headers to organize the GUI grid sections visually
+        guiGraphics.drawString(minecraft.font, "Throw Item:", 10, 14, 0x707070, false);
+
+        // 4. Dynamic Environment Instruction Labels
+        String actionText = "";
+        int offsetY = 0;
+
+        if (recipe.block().isPresent() && !recipe.isFire() && !recipe.fluid().isPresent()) {
+            actionText = "On Block:";
+        } else if (!recipe.isFire() && !recipe.fluid().isPresent()) {
+            actionText = "On Ground!";
+            offsetY = -20;
+        } else if (recipe.isFire()) {
+            actionText = "Into Fire!";
+        } else {
+            actionText = "Into Fluid:";
+        }
+
+        guiGraphics.drawString(minecraft.font, actionText, 10, 54 + offsetY, 0x707070, false);
+
+        if (recipe.isFire()) {
+            ResourceLocation blocksAtlas = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/atlas/blocks.png");
+
+            net.minecraft.client.renderer.texture.TextureAtlasSprite fireSprite = minecraft.getTextureAtlas(blocksAtlas)
+                    .apply(ResourceLocation.fromNamespaceAndPath("minecraft", "block/fire_0"));
+
+            if (fireSprite != null) {
+                guiGraphics.blit((getWidth() / 2) - 8, 48, 0, 16, 16, fireSprite);
+            }
+        }
     }
 }
