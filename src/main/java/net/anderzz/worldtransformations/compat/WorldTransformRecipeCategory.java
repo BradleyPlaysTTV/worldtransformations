@@ -10,6 +10,7 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.anderzz.worldtransformations.WorldTransformations;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -17,6 +18,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.anderzz.worldtransformations.recipe.WeightedOutput;
 import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.material.Fluid;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
@@ -84,12 +89,55 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 9, 10)
                 .addIngredients(recipe.item());
 
-        // Slot 2: Fluid Condition (Middle Top - Rendered via Bucket)
+        // Slot 2: Fluid Condition (Middle Top)
         if (recipe.fluid().isPresent()) {
+
+            final Component tooltipComponent;
+            if (recipe.replaceFluid().isPresent()) {
+                tooltipComponent = Component.literal("Will be consumed!")
+                        .withStyle(ChatFormatting.RED);
+            } else {
+                tooltipComponent = Component.literal("Acts as a reusable catalyst")
+                        .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.ITALIC);
+            }
+
             builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
                     .addFluidStack(recipe.fluid().get(), 1000)
-                    .setFluidRenderer(1000, false, 16, 16);
+                    .setFluidRenderer(1000, false, 16, 16)
+                    .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
+                        tooltip.add(tooltipComponent);
+                    }));
 
+            if (recipe.replaceFluid().isPresent()) {
+                Block targetBlock = recipe.replaceFluid().get();
+
+                if (targetBlock instanceof LiquidBlock liquidBlock) {
+                    Fluid extractedFluid = targetBlock.defaultBlockState().getFluidState().getType();
+
+                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
+                            .addFluidStack(extractedFluid, 1000)
+                            .setFluidRenderer(1000, false, 16, 16)
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
+                                tooltip.add(Component.literal("Fluid transformed into another fluid!")
+                                        .withStyle(ChatFormatting.GREEN));
+                            }));
+
+                } else if (targetBlock == Blocks.AIR){
+                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
+                            .addItemStack(new ItemStack(Blocks.BARRIER))
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
+                                tooltip.add(Component.literal("Fluid will be destroyed!")
+                                        .withStyle(ChatFormatting.RED));
+                            }));
+                } else {
+                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
+                            .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
+                                tooltip.add(Component.literal("Fluid transformed into a block!")
+                                        .withStyle(ChatFormatting.GREEN));
+                            }));
+                }
+            }
         }
 
         // Slot 3: Below Block Condition (Middle Bottom)
@@ -104,8 +152,6 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                     .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()));
         }
 
-        // Output Processing System (Right Side)
-        // Scenario A: Standard Singular Output 'result' key (Always 100% chance)
         if (recipe.result().isPresent()) {
             int startY = 50;
 
@@ -114,11 +160,9 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             }
             builder.addSlot(RecipeIngredientRole.OUTPUT, (getWidth() / 2) - 9, startY)
                     .addIngredient(VanillaTypes.ITEM_STACK, recipe.result().get())
-                    // FIX: Replaced with addRichTooltipCallback
                     .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(Component.literal("§a100% Chance")));
         }
 
-        // Scenario B: Handle Flat 'results' list arrays (Dynamic Chance)
         if (recipe.results().isPresent()) {
             List<WeightedOutput> outputs = recipe.results().get();
             int listIndex =0;
@@ -143,6 +187,11 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                                     String formattedChance = df.format(itemChance);
                                     String formatString = String.format("Drop Chance: %s%%", formattedChance);
                                     tooltip.add(Component.literal("§6" + formatString));
+
+                                    int minCount = outputConfig.min();
+                                    int maxCount = outputConfig.max();
+                                    tooltip.add(Component.literal("§7Min: " + minCount));
+                                    tooltip.add(Component.literal("§7Max: " + maxCount));
                                 }));
 
                         listIndex++;

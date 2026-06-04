@@ -94,8 +94,11 @@ public class WorldTransformationHandler {
             // 5. Check up on timer NBT keys
             CompoundTag nbt = itemEntity.getPersistentData();
 
-            int requiredTimeInSeconds = recipe.transformTime().orElse(0);
-            int requiredTimeInTicks = requiredTimeInSeconds * 20;
+            int requiredTimeInTicks = 0;
+            if (recipe.transformTime().isPresent()) {
+                int requiredTimeInSeconds = recipe.transformTime().orElse(0);
+                requiredTimeInTicks = requiredTimeInSeconds * 20;
+            }
 
             // 6. Run the 0-second check now that we are 100% sure this environment is valid
             if (requiredTimeInTicks <= 0) {
@@ -171,7 +174,16 @@ public class WorldTransformationHandler {
                 int successfulDrops = 0;
                 for (int i = 0; i < count; i++) {
                     if (random.nextDouble() * 100.0 <= outputConfig.chance()) {
-                        successfulDrops += outputConfig.itemStack().getCount();
+                        int minCount = outputConfig.min();
+                        int maxCount = outputConfig.max();
+
+                        if (maxCount < minCount) {
+                            maxCount = minCount;
+                        }
+
+                        int rolledAmount = minCount + random.nextInt((maxCount - minCount) + 1);
+
+                        successfulDrops += rolledAmount;
                     }
                 }
                 if (successfulDrops > 0) {
@@ -188,7 +200,10 @@ public class WorldTransformationHandler {
         if (recipe.replaceFluid().isPresent()) {
             BlockState blockAtPos = level.getBlockState(pos);
             if (!blockAtPos.getFluidState().isEmpty()) {
-                level.setBlockAndUpdate(pos, recipe.replaceFluid().get().defaultBlockState());
+                Block targetBlock = recipe.replaceFluid().get();
+                BlockState targetState = targetBlock.defaultBlockState();
+
+                level.setBlockAndUpdate(pos, targetState);
             }
         }
 
