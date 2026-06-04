@@ -1,5 +1,6 @@
 package net.anderzz.worldtransformations.recipe;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -13,6 +14,7 @@ import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +31,12 @@ public record WorldTransformationRecipe(
 ) implements Recipe<RecipeInput> {
 
     @Override
-    public boolean matches(RecipeInput input, Level level) {
+    public boolean matches(@NotNull RecipeInput input, @NotNull Level level) {
         return true;
     }
 
     @Override
-    public ItemStack assemble(RecipeInput input, HolderLookup.Provider registries) {
+    public @NotNull ItemStack assemble(@NotNull RecipeInput input, HolderLookup.@NotNull Provider registries) {
         return ItemStack.EMPTY;
     }
 
@@ -44,19 +46,19 @@ public record WorldTransformationRecipe(
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public @NotNull ItemStack getResultItem(HolderLookup.@NotNull Provider registries) {
         if (result.isPresent()) return result.get();
-        if (results.isPresent() && !results.get().isEmpty()) return results.get().get(0).itemStack();
+        if (results.isPresent() && !results.get().isEmpty()) return results.get().getFirst().itemStack();
         return ItemStack.EMPTY;
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public @NotNull RecipeSerializer<?> getSerializer() {
         return ModRecipes.WORLD_TRANSFORM_SERIALIZER.get();
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public @NotNull RecipeType<?> getType() {
         return ModRecipes.WORLD_TRANSFORM_TYPE.get();
     }
 
@@ -67,7 +69,7 @@ public record WorldTransformationRecipe(
                 Ingredient.CODEC
         ).xmap(
                 either -> either.map(Ingredient::of, ingredient -> ingredient),
-                ingredient -> com.mojang.datafixers.util.Either.right(ingredient)
+                Either::right
         );
 
         private static final MapCodec<WorldTransformationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -82,10 +84,10 @@ public record WorldTransformationRecipe(
         ).apply(instance, WorldTransformationRecipe::new));
 
         @Override
-        public MapCodec<WorldTransformationRecipe> codec() { return CODEC; }
+        public @NotNull MapCodec<WorldTransformationRecipe> codec() { return CODEC; }
 
         @Override
-        public StreamCodec<RegistryFriendlyByteBuf, WorldTransformationRecipe> streamCodec() {
+        public @NotNull StreamCodec<RegistryFriendlyByteBuf, WorldTransformationRecipe> streamCodec() {
             return StreamCodec.of(
                     (buf, recipe) -> {
                         Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.item());

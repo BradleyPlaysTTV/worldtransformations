@@ -17,30 +17,23 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.anderzz.worldtransformations.recipe.WeightedOutput;
 import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 import java.util.List;
 
 public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransformationRecipe> {
 
-    private final IDrawable background;
     private final IDrawable icon;
     IGuiHelper guiHelper;
     private final Component localizedName;
 
     public WorldTransformRecipeCategory(IGuiHelper guiHelper) {
         this.guiHelper = guiHelper;
-        // Build an empty grey container background frame (Width: 160, Height: 60)
-        this.background = guiHelper.createBlankDrawable(160, 60);
         this.localizedName = Component.literal("In-World Transformation");
 
-        // 1. Resolve your 32x32 texture path
         ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(WorldTransformations.MOD_ID, "textures/gui/jei_icon.png");
 
-        // 2. Create a standard 5-argument drawable matching the full 32x32 texture size
-        IDrawable rawDrawable = guiHelper.createDrawable(texture, 0, 0, 32, 32);
-
-        // 3. Wrap it in a custom anonymous IDrawable to force the 16x16 scaling matrix at render time
         this.icon = new IDrawable() {
             @Override
             public int getWidth() {
@@ -53,19 +46,19 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             }
 
             @Override
-            public void draw(GuiGraphics guiGraphics, int xOffset, int yOffset) {
+            public void draw(@NotNull GuiGraphics guiGraphics, int xOffset, int yOffset) {
                 guiGraphics.blit(texture, xOffset, yOffset, 16, 16, 0.0f, 0.0f, 32, 32, 32, 32);
             }
         };
     }
 
     @Override
-    public RecipeType<WorldTransformationRecipe> getRecipeType() {
+    public @NotNull RecipeType<WorldTransformationRecipe> getRecipeType() {
         return JeiModPlugin.TRANSFORM_JEI_TYPE;
     }
 
     @Override
-    public Component getTitle() {
+    public @NotNull Component getTitle() {
         return this.localizedName;
     }
 
@@ -86,7 +79,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformationRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformationRecipe recipe, @NotNull IFocusGroup focuses) {
         // Slot 1: Input Item/Tag (Left Side)
         builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 9, 10)
                 .addIngredients(recipe.item());
@@ -122,9 +115,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             builder.addSlot(RecipeIngredientRole.OUTPUT, (getWidth() / 2) - 9, startY)
                     .addIngredient(VanillaTypes.ITEM_STACK, recipe.result().get())
                     // FIX: Replaced with addRichTooltipCallback
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                        tooltip.add(Component.literal("§a100% Chance"));
-                    });
+                    .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(Component.literal("§a100% Chance")));
         }
 
         // Scenario B: Handle Flat 'results' list arrays (Dynamic Chance)
@@ -162,7 +153,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     }
 
     @Override
-    public void draw(WorldTransformationRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(WorldTransformationRecipe recipe, @NotNull IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
         // 1. Fetch the font renderer instance from Minecraft's main layout layer
         Minecraft minecraft = Minecraft.getInstance();
 
@@ -178,12 +169,12 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         guiGraphics.drawString(minecraft.font, "Throw Item:", 10, 14, 0x707070, false);
 
         // 4. Dynamic Environment Instruction Labels
-        String actionText = "";
+        String actionText;
         int offsetY = 0;
 
-        if (recipe.block().isPresent() && !recipe.isFire() && !recipe.fluid().isPresent()) {
+        if (recipe.block().isPresent() && !recipe.isFire() && recipe.fluid().isEmpty()) {
             actionText = "On Block:";
-        } else if (!recipe.isFire() && !recipe.fluid().isPresent()) {
+        } else if (!recipe.isFire() && recipe.fluid().isEmpty()) {
             actionText = "On Ground!";
             offsetY = -20;
         } else if (recipe.isFire()) {

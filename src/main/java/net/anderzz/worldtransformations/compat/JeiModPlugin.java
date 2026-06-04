@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class JeiModPlugin implements IModPlugin {
             RecipeType.create(WorldTransformations.MOD_ID, "world_transform", WorldTransformationRecipe.class);
 
     @Override
-    public ResourceLocation getPluginUid() {
+    public @NotNull ResourceLocation getPluginUid() {
         return ResourceLocation.fromNamespaceAndPath(WorldTransformations.MOD_ID, "jei_plugin");
     }
 
@@ -34,7 +35,7 @@ public class JeiModPlugin implements IModPlugin {
     }
 
     @Override
-    public void registerRecipes(IRecipeRegistration registration) {
+    public void registerRecipes(@NotNull IRecipeRegistration registration) {
         // Fetch the game client's active level to securely extract loaded data-driven JSON objects
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {
