@@ -64,6 +64,7 @@ This recipe requires you to throw any log on top of a Magma Block and it transfo
   "transformTime": 30, // How long it takes in seconds.
   "block": "minecraft:magma_block", // The block it must be on top of.
   "fluid: "minecraft:water", // The fluid it must be in.
+  "isFire": true, // Makes it a fire recipe.
 
   // Singular result.
   "result": {
