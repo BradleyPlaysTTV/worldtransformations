@@ -15,10 +15,10 @@ public class ModRecipes {
     public static final DeferredRegister<RecipeType<?>> TYPES =
             DeferredRegister.create(Registries.RECIPE_TYPE, WorldTransformations.MOD_ID);
 
-    public static final Supplier<RecipeSerializer<WorldTransformRecipe>> WORLD_TRANSFORM_SERIALIZER =
-            SERIALIZERS.register("world_transform", net.anderzz.worldtransformations.recipe.WorldTransformRecipe.Serializer::new);
+    public static final Supplier<RecipeSerializer<WorldTransformationRecipe>> WORLD_TRANSFORM_SERIALIZER =
+            SERIALIZERS.register("world_transform", WorldTransformationRecipe.Serializer::new);
 
-    public static final Supplier<RecipeType<WorldTransformRecipe>> WORLD_TRANSFORM_TYPE =
+    public static final Supplier<RecipeType<WorldTransformationRecipe>> WORLD_TRANSFORM_TYPE =
             TYPES.register("world_transform", () -> new RecipeType<>() {
                 @Override
                 public String toString() { return "world_transform"; }

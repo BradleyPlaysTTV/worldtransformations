@@ -1,0 +1,12 @@
+{
+  "type": "worldtransformations:world_transform",
+  "item": {
+    "item": "minecraft:sand"
+  },
+  "transformTime": 5,
+  "isFire": true,
+  "result": {
+    "id": "minecraft:glass",
+    "count": 1
+  }
+}

@@ -3,6 +3,7 @@ package net.anderzz.worldtransformations.compat;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
@@ -16,11 +17,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.anderzz.worldtransformations.recipe.WeightedOutput;
-import net.anderzz.worldtransformations.recipe.WorldTransformRecipe;
+import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
 
 import java.util.List;
 
-public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransformRecipe> {
+public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransformationRecipe> {
 
     private final IDrawable background;
     private final IDrawable icon;
@@ -40,7 +41,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     }
 
     @Override
-    public RecipeType<WorldTransformRecipe> getRecipeType() {
+    public RecipeType<WorldTransformationRecipe> getRecipeType() {
         return JeiModPlugin.TRANSFORM_JEI_TYPE;
     }
 
@@ -66,7 +67,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformationRecipe recipe, IFocusGroup focuses) {
         // Slot 1: Input Item/Tag (Left Side)
         builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 9, 10)
                 .addIngredients(recipe.item());
@@ -79,6 +80,14 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                         tooltip.add(Component.literal("§eItem must be placed in liquid"));
                     });
 
+        }
+
+        if (recipe.isFire()) {
+            builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
+                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(Items.CAMPFIRE))
+                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
+                        tooltip.add(Component.literal("§eItem must be thrown into fire"));
+                    });
         }
 
         // Slot 3: Below Block Condition (Middle Bottom)
@@ -101,7 +110,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         if (recipe.result().isPresent()) {
             int startY = 50;
 
-            if (recipe.fluid().isPresent() || recipe.block().isPresent()) {
+            if (recipe.fluid().isPresent() || recipe.block().isPresent() || recipe.isFire()) {
                 startY = 70;
             }
             builder.addSlot(RecipeIngredientRole.OUTPUT, (getWidth() / 2) - 9, startY)
@@ -141,7 +150,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     }
 
     @Override
-    public void draw(WorldTransformRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(WorldTransformationRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
         // 1. Fetch the font renderer instance from Minecraft's main layout layer
         Minecraft minecraft = Minecraft.getInstance();
 

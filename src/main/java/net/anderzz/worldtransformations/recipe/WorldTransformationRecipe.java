@@ -17,22 +17,23 @@ import net.minecraft.world.level.material.Fluid;
 import java.util.List;
 import java.util.Optional;
 
-public record WorldTransformRecipe(
+public record WorldTransformationRecipe(
         Ingredient item,
         Optional<Integer> transformTime,
         Optional<Fluid> fluid,
         Optional<Block> block,
         Optional<ItemStack> result,
         Optional<List<WeightedOutput>> results,
-        Optional<Block> replaceFluid
+        Optional<Block> replaceFluid,
+        boolean isFire // Strict primitive boolean to safely allow false defaults
 ) implements Recipe<RecipeInput> {
 
     @Override
     public boolean matches(RecipeInput input, Level level) {
-        // Vanilla internal logic requires implementing Recipe, but matching will happen manually inside our Item Entity loop
         return true;
     }
 
+    @Override
     public ItemStack assemble(RecipeInput input, HolderLookup.Provider registries) {
         return ItemStack.EMPTY;
     }
@@ -59,10 +60,8 @@ public record WorldTransformRecipe(
         return ModRecipes.WORLD_TRANSFORM_TYPE.get();
     }
 
-    // --- CODEC & NETWORK SERIALIZATION ---
-    public static class Serializer implements RecipeSerializer<WorldTransformRecipe> {
+    public static class Serializer implements RecipeSerializer<WorldTransformationRecipe> {
 
-        // FIX: Custom lenient input codec that accepts a plain string ("minecraft:cobblestone") OR an ingredient object
         private static final Codec<Ingredient> INPUT_CODEC = Codec.either(
                 BuiltInRegistries.ITEM.byNameCodec(),
                 Ingredient.CODEC
@@ -71,21 +70,22 @@ public record WorldTransformRecipe(
                 ingredient -> com.mojang.datafixers.util.Either.right(ingredient)
         );
 
-        private static final MapCodec<WorldTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                INPUT_CODEC.fieldOf("item").forGetter(WorldTransformRecipe::item), // Uses our new flexible codec
-                Codec.INT.optionalFieldOf("transformTime").forGetter(WorldTransformRecipe::transformTime),
-                BuiltInRegistries.FLUID.byNameCodec().optionalFieldOf("fluid").forGetter(WorldTransformRecipe::fluid),
-                BuiltInRegistries.BLOCK.byNameCodec().optionalFieldOf("block").forGetter(WorldTransformRecipe::block),
-                ItemStack.CODEC.optionalFieldOf("result").forGetter(WorldTransformRecipe::result),
-                WeightedOutput.CODEC.listOf().optionalFieldOf("results").forGetter(WorldTransformRecipe::results),
-                BuiltInRegistries.BLOCK.byNameCodec().optionalFieldOf("replaceFluid").forGetter(WorldTransformRecipe::replaceFluid)
-        ).apply(instance, WorldTransformRecipe::new));
+        private static final MapCodec<WorldTransformationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+                INPUT_CODEC.fieldOf("item").forGetter(WorldTransformationRecipe::item),
+                Codec.INT.optionalFieldOf("transformTime").forGetter(WorldTransformationRecipe::transformTime),
+                BuiltInRegistries.FLUID.byNameCodec().optionalFieldOf("fluid").forGetter(WorldTransformationRecipe::fluid),
+                BuiltInRegistries.BLOCK.byNameCodec().optionalFieldOf("block").forGetter(WorldTransformationRecipe::block),
+                ItemStack.CODEC.optionalFieldOf("result").forGetter(WorldTransformationRecipe::result),
+                WeightedOutput.CODEC.listOf().optionalFieldOf("results").forGetter(WorldTransformationRecipe::results),
+                BuiltInRegistries.BLOCK.byNameCodec().optionalFieldOf("replaceFluid").forGetter(WorldTransformationRecipe::replaceFluid),
+                Codec.BOOL.optionalFieldOf("isFire", false).forGetter(WorldTransformationRecipe::isFire) // Defaults to false if missing
+        ).apply(instance, WorldTransformationRecipe::new));
 
         @Override
-        public MapCodec<WorldTransformRecipe> codec() { return CODEC; }
+        public MapCodec<WorldTransformationRecipe> codec() { return CODEC; }
 
         @Override
-        public StreamCodec<RegistryFriendlyByteBuf, WorldTransformRecipe> streamCodec() {
+        public StreamCodec<RegistryFriendlyByteBuf, WorldTransformationRecipe> streamCodec() {
             return StreamCodec.of(
                     (buf, recipe) -> {
                         Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.item());
@@ -98,8 +98,9 @@ public record WorldTransformRecipe(
                                         .map(list -> (java.util.List<WeightedOutput>) list, java.util.ArrayList::new)
                         ).encode(buf, recipe.results());
                         ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.BLOCK)).encode(buf, recipe.replaceFluid());
+                        ByteBufCodecs.BOOL.encode(buf, recipe.isFire()); // Direct network write
                     },
-                    buf -> new WorldTransformRecipe(
+                    buf -> new WorldTransformationRecipe(
                             Ingredient.CONTENTS_STREAM_CODEC.decode(buf),
                             ByteBufCodecs.optional(ByteBufCodecs.VAR_INT).decode(buf),
                             ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.FLUID)).decode(buf),
@@ -109,7 +110,8 @@ public record WorldTransformRecipe(
                                     ByteBufCodecs.collection(java.util.ArrayList::new, WeightedOutput.STREAM_CODEC)
                                             .map(list -> (java.util.List<WeightedOutput>) list, java.util.ArrayList::new)
                             ).decode(buf),
-                            ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.BLOCK)).decode(buf)
+                            ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.BLOCK)).decode(buf),
+                            ByteBufCodecs.BOOL.decode(buf) // Direct network read
                     )
             );
         }

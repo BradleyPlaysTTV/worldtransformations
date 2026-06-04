@@ -1,0 +1,12 @@
+{
+    "type": "worldtransformations:world_transform",
+    "item": {
+        "item": "minecraft:cobblestone"
+    },
+    "fluid": "minecraft:lava",
+    "transformTime": 5,
+    "result": {
+        "id": "minecraft:blackstone",
+        "count": 1
+    }
+}

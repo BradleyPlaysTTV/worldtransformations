@@ -8,7 +8,7 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.anderzz.worldtransformations.recipe.ModRecipes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.anderzz.worldtransformations.recipe.WorldTransformRecipe;
+import net.anderzz.worldtransformations.recipe.WorldTransformationRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 
@@ -18,8 +18,8 @@ import java.util.List;
 public class JeiModPlugin implements IModPlugin {
 
     // Define a unique JEI reference registration identifier for your transformation type
-    public static final RecipeType<WorldTransformRecipe> TRANSFORM_JEI_TYPE =
-            RecipeType.create("worldtransform", "world_transform", WorldTransformRecipe.class);
+    public static final RecipeType<WorldTransformationRecipe> TRANSFORM_JEI_TYPE =
+            RecipeType.create("worldtransform", "world_transform", WorldTransformationRecipe.class);
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -40,7 +40,7 @@ public class JeiModPlugin implements IModPlugin {
             RecipeManager recipeManager = minecraft.level.getRecipeManager();
 
             // Map our RecipeHolder array configs out into a pure raw list for JEI to index
-            List<WorldTransformRecipe> recipes = recipeManager.getAllRecipesFor(ModRecipes.WORLD_TRANSFORM_TYPE.get())
+            List<WorldTransformationRecipe> recipes = recipeManager.getAllRecipesFor(ModRecipes.WORLD_TRANSFORM_TYPE.get())
                     .stream()
                     .map(RecipeHolder::value)
                     .toList();
