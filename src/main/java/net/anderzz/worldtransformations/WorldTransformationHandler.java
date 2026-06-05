@@ -54,7 +54,6 @@ public class WorldTransformationHandler {
             }
         }
 
-        // Handle input item fireproofing safely for hot environments
         boolean isCurrentBlockFire = blockAtItem == Blocks.FIRE || blockAtItem == Blocks.SOUL_FIRE;
         boolean isCurrentFluidLava = fluidAtItem.isSame(Fluids.LAVA);
         if (isCurrentBlockFire || isCurrentFluidLava) {
@@ -67,31 +66,21 @@ public class WorldTransformationHandler {
         for (RecipeHolder<WorldTransformationRecipe> holder : recipes) {
             WorldTransformationRecipe recipe = holder.value();
 
-            // 1. Verify Item Rule Match
             if (recipe.item().isEmpty() || !recipe.item().test(stack)) continue;
 
-            // 2. Strict Fire Check: If it's a fire recipe, you MUST be in fire.
             if (recipe.isFire()) {
                 boolean insideFire = blockAtItem == Blocks.FIRE || blockAtItem == Blocks.SOUL_FIRE;
                 if (!insideFire) continue;
             }
 
-            // 3. Strict Fluid Check: If the recipe asks for a fluid, you MUST be in it.
             if (recipe.fluid().isPresent()) {
                 if (!fluidAtItem.isSame(recipe.fluid().get())) continue;
             } else {
-                // If it is NOT a fire recipe AND it has NO fluid requirement (Anywhere Recipe),
-                // make sure it isn't accidentally drowning inside water or lava!
                 if (!recipe.isFire() && !fluidAtItem.isSame(Fluids.EMPTY)) continue;
             }
 
-            // 4. Verify the block underneath if defined
             if (recipe.block().isPresent() && blockBelowItem != recipe.block().get()) continue;
 
-            // --- ALL ENVIRONMENT FILTERS PASSED SUCCESSFULLY ---
-            // If the code reaches this line, the recipe is completely valid for this environment!
-
-            // 5. Check up on timer NBT keys
             CompoundTag nbt = itemEntity.getPersistentData();
 
             int requiredTimeInTicks = 0;
@@ -100,7 +89,6 @@ public class WorldTransformationHandler {
                 requiredTimeInTicks = requiredTimeInSeconds * 20;
             }
 
-            // 6. Run the 0-second check now that we are 100% sure this environment is valid
             if (requiredTimeInTicks <= 0) {
                 executeTransformation(itemEntity, level, pos, stack, recipe);
                 return;
@@ -116,7 +104,7 @@ public class WorldTransformationHandler {
                 executeTransformation(itemEntity, level, pos, stack, recipe);
                 nbt.remove(TIME_TAG);
             }
-            return; // Clean exit out of the tick segment for this active item entity instance
+            return;
         }
     }
 
@@ -158,7 +146,6 @@ public class WorldTransformationHandler {
 
         boolean isFireProofNeeded = (recipe.fluid().isPresent() && recipe.fluid().get().isSame(Fluids.LAVA)) || recipe.isFire();
 
-        // Process Single 'result' field
         if (recipe.result().isPresent()) {
             ItemStack output = recipe.result().get().copy();
             output.setCount(output.getCount() * count);
@@ -168,7 +155,6 @@ public class WorldTransformationHandler {
             level.addFreshEntity(singleOutputEntity);
         }
 
-        // Process Weighted Multi-Drop Array
         if (recipe.results().isPresent()) {
             for (WeightedOutput outputConfig : recipe.results().get()) {
                 int successfulDrops = 0;

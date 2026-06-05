@@ -42,12 +42,12 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         this.icon = new IDrawable() {
             @Override
             public int getWidth() {
-                return 16; // Tell JEI the layout bounding box is 16 pixels wide
+                return 16;
             }
 
             @Override
             public int getHeight() {
-                return 16; // Tell JEI the layout bounding box is 16 pixels high
+                return 16;
             }
 
             @Override
@@ -72,7 +72,6 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         return 166;
     }
 
-    // 2. Specify the structural height of your JEI category layout frame
     @Override
     public int getHeight() {
         return 126;
@@ -85,11 +84,9 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformationRecipe recipe, @NotNull IFocusGroup focuses) {
-        // Slot 1: Input Item/Tag (Left Side)
         builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 9, 10)
                 .addIngredients(recipe.item());
 
-        // Slot 2: Fluid Condition (Middle Top)
         if (recipe.fluid().isPresent()) {
 
             final Component tooltipComponent;
@@ -104,43 +101,34 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
                     .addFluidStack(recipe.fluid().get(), 1000)
                     .setFluidRenderer(1000, false, 16, 16)
-                    .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
-                        tooltip.add(tooltipComponent);
-                    }));
+                    .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(tooltipComponent)));
 
             if (recipe.replaceFluid().isPresent()) {
                 Block targetBlock = recipe.replaceFluid().get();
 
-                if (targetBlock instanceof LiquidBlock liquidBlock) {
+                if (targetBlock instanceof LiquidBlock) {
                     Fluid extractedFluid = targetBlock.defaultBlockState().getFluidState().getType();
 
                     builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
                             .addFluidStack(extractedFluid, 1000)
                             .setFluidRenderer(1000, false, 16, 16)
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
-                                tooltip.add(Component.literal("Fluid transformed into another fluid!")
-                                        .withStyle(ChatFormatting.GREEN));
-                            }));
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into another fluid!")
+                                    .withStyle(ChatFormatting.GREEN))));
 
                 } else if (targetBlock == Blocks.AIR){
                     builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
                             .addItemStack(new ItemStack(Blocks.BARRIER))
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
-                                tooltip.add(Component.literal("Fluid will be destroyed!")
-                                        .withStyle(ChatFormatting.RED));
-                            }));
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid will be destroyed!")
+                                    .withStyle(ChatFormatting.RED))));
                 } else {
                     builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
                             .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> {
-                                tooltip.add(Component.literal("Fluid transformed into a block!")
-                                        .withStyle(ChatFormatting.GREEN));
-                            }));
+                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into a block!")
+                                    .withStyle(ChatFormatting.GREEN))));
                 }
             }
         }
 
-        // Slot 3: Below Block Condition (Middle Bottom)
         if (recipe.block().isPresent()) {
             int startX = 0;
 
@@ -203,21 +191,16 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
     @Override
     public void draw(WorldTransformationRecipe recipe, @NotNull IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics, double mouseX, double mouseY) {
-        // 1. Fetch the font renderer instance from Minecraft's main layout layer
         Minecraft minecraft = Minecraft.getInstance();
 
-        // 2. Safely parse the transformation timer value in seconds
         int seconds = recipe.transformTime().orElse(0);
         String timeString = seconds + "s";
 
-        // 3. Render the progress strings
         guiGraphics.drawString(minecraft.font, timeString, 82, 35, 0x707070, false);
         guiGraphics.drawString(minecraft.font, "↓", 75, 35, 0x707070, false);
 
-        // 3. Render headers to organize the GUI grid sections visually
         guiGraphics.drawString(minecraft.font, "Throw Item:", 10, 14, 0x707070, false);
 
-        // 4. Dynamic Environment Instruction Labels
         String actionText;
         int offsetY = 0;
 

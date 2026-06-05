@@ -19,7 +19,6 @@ import java.util.List;
 @JeiPlugin
 public class JeiModPlugin implements IModPlugin {
 
-    // Define a unique JEI reference registration identifier for your transformation type
     public static final RecipeType<WorldTransformationRecipe> TRANSFORM_JEI_TYPE =
             RecipeType.create(WorldTransformations.MOD_ID, "world_transform", WorldTransformationRecipe.class);
 
@@ -30,18 +29,15 @@ public class JeiModPlugin implements IModPlugin {
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
-        // Register the graphical blueprint layout interface container
         registration.addRecipeCategories(new WorldTransformRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
     }
 
     @Override
     public void registerRecipes(@NotNull IRecipeRegistration registration) {
-        // Fetch the game client's active level to securely extract loaded data-driven JSON objects
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {
             RecipeManager recipeManager = minecraft.level.getRecipeManager();
 
-            // Map our RecipeHolder array configs out into a pure raw list for JEI to index
             List<WorldTransformationRecipe> recipes = recipeManager.getAllRecipesFor(ModRecipes.WORLD_TRANSFORM_TYPE.get())
                     .stream()
                     .map(RecipeHolder::value)

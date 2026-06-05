@@ -2,13 +2,17 @@ package net.anderzz.worldtransformations.recipe;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.anderzz.worldtransformations.WorldTransformations;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -27,7 +31,7 @@ public record WorldTransformationRecipe(
         Optional<ItemStack> result,
         Optional<List<WeightedOutput>> results,
         Optional<Block> replaceFluid,
-        boolean isFire // Strict primitive boolean to safely allow false defaults
+        boolean isFire
 ) implements Recipe<RecipeInput> {
 
     @Override
@@ -72,7 +76,7 @@ public record WorldTransformationRecipe(
                 Either::right
         );
 
-        private static final MapCodec<WorldTransformationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+        private static final MapCodec<WorldTransformationRecipe> BASE_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                 INPUT_CODEC.fieldOf("item").forGetter(WorldTransformationRecipe::item),
                 Codec.INT.optionalFieldOf("transformTime").forGetter(WorldTransformationRecipe::transformTime),
                 BuiltInRegistries.FLUID.byNameCodec().optionalFieldOf("fluid").forGetter(WorldTransformationRecipe::fluid),
@@ -80,8 +84,38 @@ public record WorldTransformationRecipe(
                 ItemStack.CODEC.optionalFieldOf("result").forGetter(WorldTransformationRecipe::result),
                 WeightedOutput.CODEC.listOf().optionalFieldOf("results").forGetter(WorldTransformationRecipe::results),
                 BuiltInRegistries.BLOCK.byNameCodec().optionalFieldOf("replaceFluid").forGetter(WorldTransformationRecipe::replaceFluid),
-                Codec.BOOL.optionalFieldOf("isFire", false).forGetter(WorldTransformationRecipe::isFire) // Defaults to false if missing
+                Codec.BOOL.optionalFieldOf("isFire", false).forGetter(WorldTransformationRecipe::isFire)
         ).apply(instance, WorldTransformationRecipe::new));
+
+        private static final MapCodec<WorldTransformationRecipe> CODEC = BASE_CODEC.flatXmap(
+                recipe -> {
+                    ResourceLocation unboxedReplaceFluidId = recipe.replaceFluid()
+                            .map(BuiltInRegistries.BLOCK::getKey)
+                            .orElse(null);
+
+                    boolean isValid = RecipeValidator.validateRecipe(
+                            ResourceLocation.fromNamespaceAndPath("worldtransformations", "recipe_validation"),
+                            recipe.item(),
+                            unboxedReplaceFluidId,
+                            recipe.result().orElse(null),
+                            recipe.results().orElse(null)
+                    );
+
+                    if (!isValid) {
+                        BASE_CODEC.codec().encodeStart(JsonOps.INSTANCE, recipe)
+                                .resultOrPartial(err -> WorldTransformations.error("Failed to dump raw JSON content: " + err))
+                                .ifPresent(jsonElement -> {
+                                    // Spits out the raw formatted JSON block into your console log window
+                                    WorldTransformations.error("Failing JSON Recipe: {}", jsonElement.toString());
+                                });
+
+                        return DataResult.error(() -> "WorldTransformation recipe structural validation gate failed! Skipping entry.");
+                    }
+
+                    return DataResult.success(recipe);
+                },
+                DataResult::success
+        );
 
         @Override
         public @NotNull MapCodec<WorldTransformationRecipe> codec() { return CODEC; }
@@ -100,7 +134,7 @@ public record WorldTransformationRecipe(
                                         .map(list -> (java.util.List<WeightedOutput>) list, java.util.ArrayList::new)
                         ).encode(buf, recipe.results());
                         ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.BLOCK)).encode(buf, recipe.replaceFluid());
-                        ByteBufCodecs.BOOL.encode(buf, recipe.isFire()); // Direct network write
+                        ByteBufCodecs.BOOL.encode(buf, recipe.isFire());
                     },
                     buf -> new WorldTransformationRecipe(
                             Ingredient.CONTENTS_STREAM_CODEC.decode(buf),
@@ -113,7 +147,7 @@ public record WorldTransformationRecipe(
                                             .map(list -> (java.util.List<WeightedOutput>) list, java.util.ArrayList::new)
                             ).decode(buf),
                             ByteBufCodecs.optional(ByteBufCodecs.registry(net.minecraft.core.registries.Registries.BLOCK)).decode(buf),
-                            ByteBufCodecs.BOOL.decode(buf) // Direct network read
+                            ByteBufCodecs.BOOL.decode(buf)
                     )
             );
         }
