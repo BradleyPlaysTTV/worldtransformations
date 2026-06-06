@@ -26,7 +26,7 @@ public class WorldTransformations {
 
         NeoForge.EVENT_BUS.register(this);
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "worldtransformations.toml");
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

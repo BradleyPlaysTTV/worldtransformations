@@ -35,10 +35,14 @@ public class WorldTransformationHandler {
     public static void onItemTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof ItemEntity itemEntity)) return;
 
+        if (itemEntity.tickCount % Config.TICK_PROCESSING_RATE.get() != 0) return;
+
+        if (!Config.ALLOW_CONTINUOUS_RECIPES.get() && itemEntity.getPersistentData().getBoolean("is_recipe_output")) return;
+
         Level level = itemEntity.getCommandSenderWorld();
         if (level.isClientSide()) return;
 
-        if (itemEntity.getOwner() == null) return;
+        if (!Config.ALLOW_FAKE_PLAYER.get() && itemEntity.getOwner() != null) return;
 
         ItemStack stack = itemEntity.getItem();
         BlockPos pos = itemEntity.blockPosition();
@@ -91,10 +95,10 @@ public class WorldTransformationHandler {
 
             if (requiredTimeInTicks <= 0) {
                 executeTransformation(itemEntity, level, pos, stack, recipe);
-                return;
+                break;
             }
 
-            int currentTicks = nbt.getInt("transformTime") + 1;
+            int currentTicks = nbt.getInt("transformTime") + Config.TICK_PROCESSING_RATE.get();
             nbt.putInt("transformTime", currentTicks);
 
             spawnTickingParticles(level, itemEntity, fluidAtItem, recipe.isFire());
@@ -103,11 +107,13 @@ public class WorldTransformationHandler {
                 executeTransformation(itemEntity, level, pos, stack, recipe);
                 nbt.remove("transformTime");
             }
-            return;
+            break;
         }
     }
 
     private static void spawnTickingParticles(Level level, ItemEntity itemEntity, Fluid fluidAtItem, boolean isFireRecipe) {
+        if (!Config.ENABLE_PARTICLES.get()) return;
+
         if (!(level instanceof ServerLevel serverlevel)) return;
 
         RandomSource random = level.getRandom();
@@ -138,6 +144,9 @@ public class WorldTransformationHandler {
             ItemEntity singleOutputEntity = new ItemEntity(level, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), output);
 
             if (isFireProofNeeded) singleOutputEntity.setInvulnerable(true);
+
+            singleOutputEntity.getPersistentData().putBoolean("is_recipe_output", true);
+
             level.addFreshEntity(singleOutputEntity);
         }
 
@@ -160,6 +169,9 @@ public class WorldTransformationHandler {
                     ItemEntity multiOutputEntity = new ItemEntity(level, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), output);
 
                     if (isFireProofNeeded) multiOutputEntity.setInvulnerable(true);
+
+                    multiOutputEntity.getPersistentData().putBoolean("is_recipe_output", true);
+
                     level.addFreshEntity(multiOutputEntity);
                 }
             }
@@ -181,8 +193,10 @@ public class WorldTransformationHandler {
             completionSound = SoundEvents.FISHING_BOBBER_SPLASH;
         }
 
-        level.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
-                completionSound, SoundSource.BLOCKS, 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+        if (Config.ENABLE_SOUNDS.get()) {
+            level.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                    completionSound, SoundSource.BLOCKS, 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+        }
 
         itemEntity.discard();
     }
