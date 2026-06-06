@@ -88,7 +88,6 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                 .addIngredients(recipe.item());
 
         if (recipe.fluid().isPresent()) {
-
             final Component tooltipComponent;
             if (recipe.replaceFluid().isPresent()) {
                 tooltipComponent = Component.literal("Will be consumed!")
@@ -141,14 +140,23 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         }
 
         if (recipe.result().isPresent()) {
-            int startY = 50;
+            int startX = 2;
+            int startY = 70;
 
-            if (recipe.fluid().isPresent() || recipe.block().isPresent() || recipe.isFire()) {
-                startY = 70;
+            for (int y = 0; y < 3; y++) {
+                for (int x = 0; x < 9; x++) {
+                    int posX = (18 * x) + startX;
+                    int posY = (18 * y) + startY;
+
+                    var slotBuilder = builder.addSlot(RecipeIngredientRole.OUTPUT, posX, posY)
+                            .setBackground(this.guiHelper.getSlotDrawable(), -1, -1);
+
+                    if (x == 0 && y == 0) {
+                        slotBuilder.addIngredient(VanillaTypes.ITEM_STACK, recipe.result().get());
+                        slotBuilder.addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(Component.literal("§a100% Chance")));
+                    }
+                }
             }
-            builder.addSlot(RecipeIngredientRole.OUTPUT, (getWidth() / 2) - 9, startY)
-                    .addIngredient(VanillaTypes.ITEM_STACK, recipe.result().get())
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(Component.literal("§a100% Chance")));
         }
 
         if (recipe.results().isPresent()) {

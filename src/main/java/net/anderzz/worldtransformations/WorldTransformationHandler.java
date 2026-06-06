@@ -31,14 +31,14 @@ import java.util.List;
 @EventBusSubscriber(modid = WorldTransformations.MOD_ID)
 public class WorldTransformationHandler {
 
-    private static final String TIME_TAG = "transformTime";
-
     @SubscribeEvent
     public static void onItemTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof ItemEntity itemEntity)) return;
 
         Level level = itemEntity.getCommandSenderWorld();
         if (level.isClientSide()) return;
+
+        if (itemEntity.getOwner() == null) return;
 
         ItemStack stack = itemEntity.getItem();
         BlockPos pos = itemEntity.blockPosition();
@@ -94,15 +94,14 @@ public class WorldTransformationHandler {
                 return;
             }
 
-            // 7. Tick Timer Management
-            int currentTicks = nbt.getInt(TIME_TAG) + 1;
-            nbt.putInt(TIME_TAG, currentTicks);
+            int currentTicks = nbt.getInt("transformTime") + 1;
+            nbt.putInt("transformTime", currentTicks);
 
             spawnTickingParticles(level, itemEntity, fluidAtItem, recipe.isFire());
 
             if (currentTicks >= requiredTimeInTicks) {
                 executeTransformation(itemEntity, level, pos, stack, recipe);
-                nbt.remove(TIME_TAG);
+                nbt.remove("transformTime");
             }
             return;
         }
@@ -111,8 +110,7 @@ public class WorldTransformationHandler {
     private static void spawnTickingParticles(Level level, ItemEntity itemEntity, Fluid fluidAtItem, boolean isFireRecipe) {
         if (!(level instanceof ServerLevel serverlevel)) return;
 
-        net.minecraft.util.RandomSource random = level.getRandom();
-
+        RandomSource random = level.getRandom();
         if (random.nextInt(3) != 0) return;
 
         double offsetX = itemEntity.getX() + (random.nextDouble() - 0.5) * 0.4;
@@ -120,23 +118,11 @@ public class WorldTransformationHandler {
         double offsetZ = itemEntity.getZ() + (random.nextDouble() - 0.5) * 0.4;
 
         if (isFireRecipe) {
-            serverlevel.sendParticles(ParticleTypes.FLAME,
-                    offsetX, offsetY, offsetZ,
-                    1,
-                    0, 0.02, 0,
-                    0.01);
+            serverlevel.sendParticles(ParticleTypes.FLAME, offsetX, offsetY, offsetZ, 1, 0, 0.02, 0, 0.01);
         } else if (!fluidAtItem.isSame(Fluids.EMPTY)) {
-            serverlevel.sendParticles(ParticleTypes.BUBBLE,
-                    offsetX, offsetY, offsetZ,
-                    1,
-                    0, 0.05, 0.01,
-                    0.01);
+            serverlevel.sendParticles(ParticleTypes.BUBBLE, offsetX, offsetY, offsetZ, 1, 0, 0.05, 0.01, 0.01);
         } else {
-            serverlevel.sendParticles(ParticleTypes.SMOKE,
-                    offsetX, offsetY, offsetZ,
-                    1,
-                    0, 0.05, 0.01,
-                    0.01);
+            serverlevel.sendParticles(ParticleTypes.SMOKE, offsetX, offsetY, offsetZ, 1, 0, 0.05, 0.01, 0.01);
         }
     }
 
@@ -162,13 +148,9 @@ public class WorldTransformationHandler {
                     if (random.nextDouble() * 100.0 <= outputConfig.chance()) {
                         int minCount = outputConfig.min();
                         int maxCount = outputConfig.max();
-
-                        if (maxCount < minCount) {
-                            maxCount = minCount;
-                        }
+                        if (maxCount < minCount) maxCount = minCount;
 
                         int rolledAmount = minCount + random.nextInt((maxCount - minCount) + 1);
-
                         successfulDrops += rolledAmount;
                     }
                 }
@@ -188,7 +170,6 @@ public class WorldTransformationHandler {
             if (!blockAtPos.getFluidState().isEmpty()) {
                 Block targetBlock = recipe.replaceFluid().get();
                 BlockState targetState = targetBlock.defaultBlockState();
-
                 level.setBlockAndUpdate(pos, targetState);
             }
         }
@@ -215,6 +196,8 @@ public class WorldTransformationHandler {
         if (source.is(DamageTypes.IN_FIRE) || source.is(DamageTypes.CAMPFIRE) || source.is(DamageTypes.LAVA)) {
             Level level = itemEntity.getCommandSenderWorld();
             if (level.isClientSide()) return;
+
+            if (itemEntity.getOwner() == null) return;
 
             ItemStack stack = itemEntity.getItem();
 

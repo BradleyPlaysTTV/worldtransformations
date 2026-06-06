@@ -22,6 +22,7 @@ public class WorldTransformations {
         modEventBus.addListener(this::commonSetup);
 
         ModRecipes.register(modEventBus);
+        ModDataComponents.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
 
