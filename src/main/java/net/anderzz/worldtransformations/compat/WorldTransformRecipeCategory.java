@@ -9,10 +9,12 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.anderzz.worldtransformations.Config;
 import net.anderzz.worldtransformations.WorldTransformations;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -32,6 +34,12 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
     private final IDrawable icon;
     IGuiHelper guiHelper;
     private final Component localizedName;
+
+    private final int OUTPUT_ROWS = Config.TOTAL_OUTPUT_ROWS.get();
+    private final int OUTPUT_COLUMS = 9;
+
+    private static final ResourceLocation ARROW_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath("worldtransformations", "textures/gui/arrow.png");
 
     public WorldTransformRecipeCategory(IGuiHelper guiHelper) {
         this.guiHelper = guiHelper;
@@ -74,7 +82,7 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
     @Override
     public int getHeight() {
-        return 126;
+        return (OUTPUT_ROWS * 10) + 76;
     }
 
     @Override
@@ -84,8 +92,11 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, WorldTransformationRecipe recipe, @NotNull IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 9, 10)
-                .addIngredients(recipe.item());
+        builder.addSlot(RecipeIngredientRole.INPUT, (getWidth() / 2) - 40, 10)
+                .addIngredients(recipe.item())
+                .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(
+                        Component.literal("Throw item.")
+                                .withStyle(ChatFormatting.GREEN)));
 
         if (recipe.fluid().isPresent()) {
             final Component tooltipComponent;
@@ -93,11 +104,11 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                 tooltipComponent = Component.literal("Will be consumed!")
                         .withStyle(ChatFormatting.RED);
             } else {
-                tooltipComponent = Component.literal("Acts as a reusable catalyst")
-                        .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.ITALIC);
+                tooltipComponent = Component.literal("Does not get consumed!")
+                        .withStyle(ChatFormatting.YELLOW);
             }
 
-            builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 50)
+            builder.addSlot(RecipeIngredientRole.CATALYST, (getWidth() / 2) - 9, 40)
                     .addFluidStack(recipe.fluid().get(), 1000)
                     .setFluidRenderer(1000, false, 16, 16)
                     .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(tooltipComponent)));
@@ -105,26 +116,40 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
             if (recipe.replaceFluid().isPresent()) {
                 Block targetBlock = recipe.replaceFluid().get();
 
-                if (targetBlock instanceof LiquidBlock) {
-                    Fluid extractedFluid = targetBlock.defaultBlockState().getFluidState().getType();
+                int startX = 2;
+                int startY = 60;
 
-                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
-                            .addFluidStack(extractedFluid, 1000)
-                            .setFluidRenderer(1000, false, 16, 16)
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into another fluid!")
-                                    .withStyle(ChatFormatting.GREEN))));
+                for (int y = 0; y < OUTPUT_ROWS; y++){
+                    for (int x = 0; x < OUTPUT_COLUMS; x++) {
+                        int posX = (18 * x) + startX;
+                        int posY = (18 * y) + startY;
 
-                } else if (targetBlock == Blocks.AIR){
-                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
-                            .addItemStack(new ItemStack(Blocks.BARRIER))
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid will be destroyed!")
-                                    .withStyle(ChatFormatting.RED))));
-                } else {
-                    builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + 20, 50)
-                            .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
-                            .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into a block!")
-                                    .withStyle(ChatFormatting.GREEN))));
+                        var slotBuilder = builder.addSlot(RecipeIngredientRole.OUTPUT, posX, posY)
+                                .setBackground(this.guiHelper.getSlotDrawable(), -1, -1);
+
+                        if (x == 0 && y == 0) {
+                            if (targetBlock instanceof LiquidBlock) {
+                                Fluid extractedFluid = targetBlock.defaultBlockState().getFluidState().getType();
+
+                                slotBuilder.addFluidStack(extractedFluid, 1000)
+                                        .setFluidRenderer(1000, false, 16, 16)
+                                        .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into another fluid!")
+                                                .withStyle(ChatFormatting.GREEN))));
+
+                            } else if (targetBlock == Blocks.AIR){
+                                slotBuilder.addItemStack(new ItemStack(Blocks.BARRIER))
+                                        .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid will be destroyed!")
+                                                .withStyle(ChatFormatting.RED))));
+                            } else {
+                                slotBuilder.addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
+                                        .addRichTooltipCallback(((recipeSlotView, tooltip) -> tooltip.add(Component.literal("Fluid transformed into a block!")
+                                                .withStyle(ChatFormatting.GREEN))));
+                            }
+                        }
+                    }
                 }
+
+
             }
         }
 
@@ -135,16 +160,19 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
                 startX = 20;
             }
 
-            builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + startX, 50)
-                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()));
+            builder.addSlot(RecipeIngredientRole.CATALYST, ((getWidth() / 2) - 9) + startX, 40)
+                    .addIngredient(VanillaTypes.ITEM_STACK, new ItemStack(recipe.block().get().asItem()))
+                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                            tooltip.add(Component.literal("Block must be below thrown item!")
+                                    .withStyle(ChatFormatting.GREEN)));
         }
 
         if (recipe.result().isPresent()) {
             int startX = 2;
-            int startY = 70;
+            int startY = 60;
 
-            for (int y = 0; y < 3; y++) {
-                for (int x = 0; x < 9; x++) {
+            for (int y = 0; y < OUTPUT_ROWS; y++) {
+                for (int x = 0; x < OUTPUT_COLUMS; x++) {
                     int posX = (18 * x) + startX;
                     int posY = (18 * y) + startY;
 
@@ -161,12 +189,12 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
 
         if (recipe.results().isPresent()) {
             List<WeightedOutput> outputs = recipe.results().get();
-            int listIndex =0;
+            int listIndex = 0;
             int startX = 2;
-            int startY = 70;
+            int startY = 60;
 
-            for (int y = 0; y < 3; y++) {
-                for (int x = 0; x < 9; x++) {
+            for (int y = 0; y < OUTPUT_ROWS; y++) {
+                for (int x = 0; x < OUTPUT_COLUMS; x++) {
                     int posX = (18 * x) + startX;
                     int posY = (18 * y) + startY;
 
@@ -204,35 +232,23 @@ public class WorldTransformRecipeCategory implements IRecipeCategory<WorldTransf
         int seconds = recipe.transformTime().orElse(0);
         String timeString = seconds + "s";
 
-        guiGraphics.drawString(minecraft.font, timeString, 82, 35, 0x707070, false);
-        guiGraphics.drawString(minecraft.font, "↓", 75, 35, 0x707070, false);
-
-        guiGraphics.drawString(minecraft.font, "Throw Item:", 10, 14, 0x707070, false);
-
-        String actionText;
-        int offsetY = 0;
-
-        if (recipe.block().isPresent() && !recipe.isFire() && recipe.fluid().isEmpty()) {
-            actionText = "On Block:";
-        } else if (!recipe.isFire() && recipe.fluid().isEmpty()) {
-            actionText = "On Ground!";
-            offsetY = -20;
-        } else if (recipe.isFire()) {
-            actionText = "Into Fire!";
-        } else {
-            actionText = "Into Fluid:";
+        int offsetX = 0;
+        if (seconds >= 10) {
+            offsetX = -6;
         }
 
-        guiGraphics.drawString(minecraft.font, actionText, 10, 54 + offsetY, 0x707070, false);
+        guiGraphics.drawString(minecraft.font, timeString, 60 + offsetX, 30, 0x707070, false);
+
+        guiGraphics.blit(ARROW_TEXTURE, (getWidth() / 2) - 22, 9, 0, 0, 32, 32, 32, 32);
 
         if (recipe.isFire()) {
             ResourceLocation blocksAtlas = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/atlas/blocks.png");
 
-            net.minecraft.client.renderer.texture.TextureAtlasSprite fireSprite = minecraft.getTextureAtlas(blocksAtlas)
+            TextureAtlasSprite fireSprite = minecraft.getTextureAtlas(blocksAtlas)
                     .apply(ResourceLocation.fromNamespaceAndPath("minecraft", "block/fire_0"));
 
             if (fireSprite != null) {
-                guiGraphics.blit((getWidth() / 2) - 8, 48, 0, 16, 16, fireSprite);
+                guiGraphics.blit((getWidth() / 2) - 8, 38, 0, 16, 16, fireSprite);
             }
         }
     }

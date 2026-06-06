@@ -12,7 +12,6 @@ import java.util.List;
 
 public class RecipeValidator {
     public static boolean validateRecipe(
-            ResourceLocation recipeId,
             Ingredient inputItem,
             @Nullable ResourceLocation replaceFluidId,
             @Nullable ItemStack result,

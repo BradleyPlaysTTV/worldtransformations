@@ -94,7 +94,6 @@ public record WorldTransformationRecipe(
                             .orElse(null);
 
                     boolean isValid = RecipeValidator.validateRecipe(
-                            ResourceLocation.fromNamespaceAndPath("worldtransformations", "recipe_validation"),
                             recipe.item(),
                             unboxedReplaceFluidId,
                             recipe.result().orElse(null),
