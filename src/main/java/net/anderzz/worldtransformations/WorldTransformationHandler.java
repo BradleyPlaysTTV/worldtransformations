@@ -2,7 +2,10 @@ package net.anderzz.worldtransformations;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -21,6 +24,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityInvulnerabilityCheckEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.anderzz.worldtransformations.recipe.ModRecipes;
 import net.anderzz.worldtransformations.recipe.WeightedOutput;
@@ -59,8 +63,8 @@ public class WorldTransformationHandler {
         }
 
         boolean isCurrentBlockFire = blockAtItem == Blocks.FIRE || blockAtItem == Blocks.SOUL_FIRE;
-        boolean isCurrentFluidLava = fluidAtItem.isSame(Fluids.LAVA);
-        if (isCurrentBlockFire || isCurrentFluidLava) {
+        boolean isCurrentFluidFireproofNeeded = BuiltInRegistries.FLUID.wrapAsHolder(fluidAtItem).is(ModTags.FIREPROOFING);
+        if (isCurrentBlockFire || isCurrentFluidFireproofNeeded) {
             itemEntity.setInvulnerable(true);
         }
 
@@ -136,14 +140,12 @@ public class WorldTransformationHandler {
         int count = originalStack.getCount();
         RandomSource random = level.getRandom();
 
-        boolean isFireProofNeeded = (recipe.fluid().isPresent() && recipe.fluid().get().isSame(Fluids.LAVA)) || recipe.isFire();
-
         if (recipe.result().isPresent()) {
             ItemStack output = recipe.result().get().copy();
             output.setCount(output.getCount() * count);
             ItemEntity singleOutputEntity = new ItemEntity(level, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), output);
 
-            if (isFireProofNeeded) singleOutputEntity.setInvulnerable(true);
+            if (isFireProofNeeded(recipe, level)) singleOutputEntity.setInvulnerable(true);
 
             singleOutputEntity.getPersistentData().putBoolean("is_recipe_output", true);
 
@@ -168,7 +170,7 @@ public class WorldTransformationHandler {
                     output.setCount(successfulDrops);
                     ItemEntity multiOutputEntity = new ItemEntity(level, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), output);
 
-                    if (isFireProofNeeded) multiOutputEntity.setInvulnerable(true);
+                    if (isFireProofNeeded(recipe, level)) multiOutputEntity.setInvulnerable(true);
 
                     multiOutputEntity.getPersistentData().putBoolean("is_recipe_output", true);
 
@@ -187,7 +189,7 @@ public class WorldTransformationHandler {
         }
 
         SoundEvent completionSound = SoundEvents.ITEM_PICKUP;
-        if (isFireProofNeeded) {
+        if (isFireProofNeeded(recipe, level)) {
             completionSound = SoundEvents.FIRE_EXTINGUISH;
         } else if (recipe.fluid().isPresent() && recipe.fluid().get().isSame(Fluids.WATER)) {
             completionSound = SoundEvents.FISHING_BOBBER_SPLASH;
@@ -202,7 +204,7 @@ public class WorldTransformationHandler {
     }
 
     @SubscribeEvent
-    public static void onIncomingDamage(net.neoforged.neoforge.event.entity.EntityInvulnerabilityCheckEvent event) {
+    public static void onIncomingDamage(EntityInvulnerabilityCheckEvent event) {
         if (!(event.getEntity() instanceof ItemEntity itemEntity)) return;
 
         DamageSource source = event.getSource();
@@ -222,14 +224,20 @@ public class WorldTransformationHandler {
                 WorldTransformationRecipe recipe = holder.value();
 
                 if (!recipe.item().isEmpty() && recipe.item().test(stack)) {
-                    boolean isLavaRecipe = recipe.fluid().isPresent() && recipe.fluid().get().isSame(Fluids.LAVA);
-
-                    if (recipe.isFire() || isLavaRecipe) {
+                    if (isFireProofNeeded(recipe, level)) {
                         event.setInvulnerable(true);
                         return;
                     }
                 }
             }
         }
+    }
+
+    public static boolean isFireProofNeeded(WorldTransformationRecipe recipe, Level level) {
+        return recipe.isFire() || (recipe.fluid().isPresent() &&
+                level.registryAccess().lookupOrThrow(Registries.FLUID)
+                        .get(ResourceKey.create(Registries.FLUID,
+                                BuiltInRegistries.FLUID.getKey(recipe.fluid().get())))
+                        .map(fluidHolder -> fluidHolder.is(ModTags.FIREPROOFING)).orElse(false));
     }
 }

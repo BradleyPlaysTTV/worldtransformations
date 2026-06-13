@@ -180,6 +180,6 @@ idea {
 
 // This block ensures the filter ONLY runs during the final packaging build task
 tasks.named('jar', Jar) {
-    // Drop the entire data folder ONLY when generating the release jar file
-    exclude("data/**")
+    // Drop the recipes folder from the .jar file as they are for testing purposes only.
+    exclude("data/worldtransformations/recipes/**")
 }
